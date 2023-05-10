@@ -1,9 +1,10 @@
 package config
 
-import "sync"
+import (
+	"log"
+	"sync"
 
-const (
-	configPath = "/configs/app-config.yaml"
+	"github.com/ilyakaznacheev/cleanenv"
 )
 
 var (
@@ -12,6 +13,23 @@ var (
 )
 
 type Config struct {
-	Port string `yaml:"port" env:"PORT" env-default:"8080"`
-	Host string `yaml:"host" env:"HOST" env-default:"localhost"`
+	ApiPort    string `env:"API_PORT"`
+	ApiHost    string `env:"API_HOST"`
+	ClientHost string `env:"CLIENT_HOST"`
+	ClientPort string `env:"CLIENT_PORT"`
+}
+
+func GetConfig() *Config {
+	once.Do(func() {
+		log.Println("gather app config")
+		instance = &Config{}
+
+		if err := cleanenv.ReadEnv(instance); err != nil {
+			helpText := "Gametrade - the best gaming store"
+			description, _ := cleanenv.GetDescription(instance, &helpText)
+			log.Println(description)
+			log.Fatal(err)
+		}
+	})
+	return instance
 }

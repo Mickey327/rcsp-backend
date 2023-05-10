@@ -13,6 +13,8 @@ RUN go mod download
 # Copy the source from the current directory to the Working Directory inside the container
 COPY . .
 
+RUN go mod tidy
+
 # Build the Go parsers
 RUN go build -o bin/api ./cmd/app/main.go
 
