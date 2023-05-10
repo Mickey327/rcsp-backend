@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS companies(
 );
 CREATE TABLE IF NOT EXISTS products(
     id BIGSERIAL NOT NULL PRIMARY KEY,
-    name TEXT NOT NULL,
+    name TEXT NOT NULL UNIQUE,
     description TEXT,
     price BIGINT NOT NULL,
     stock BIGINT NOT NULL,

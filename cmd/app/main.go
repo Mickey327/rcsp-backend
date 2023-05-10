@@ -9,6 +9,7 @@ import (
 	"github.com/Mickey327/rcsp-backend/internal/app/category"
 	"github.com/Mickey327/rcsp-backend/internal/app/company"
 	appConfig "github.com/Mickey327/rcsp-backend/internal/app/config"
+	"github.com/Mickey327/rcsp-backend/internal/app/product"
 	"github.com/Mickey327/rcsp-backend/internal/app/user"
 	dbConfig "github.com/Mickey327/rcsp-backend/internal/db/config"
 	"github.com/Mickey327/rcsp-backend/internal/db/repository/postgres"
@@ -52,6 +53,13 @@ func main() {
 	e.DELETE("/api/company/:id", companyHandler.Delete, jwtMiddleware)
 	e.POST("/api/company", companyHandler.Create, jwtMiddleware)
 	e.PUT("/api/company", companyHandler.Update, jwtMiddleware)
+
+	productHandler := product.NewHandler(product.NewService(product.NewRepository(db)))
+	e.GET("/api/product/:id", productHandler.Read)
+	e.GET("/api/product", productHandler.ReadAll)
+	e.DELETE("/api/product/:id", productHandler.Delete, jwtMiddleware)
+	e.POST("/api/product", productHandler.Create, jwtMiddleware)
+	e.PUT("/api/product", productHandler.Update, jwtMiddleware)
 
 	e.GET("/hello", func(c echo.Context) error {
 		u := c.Get("user").(*jwt.Token)
