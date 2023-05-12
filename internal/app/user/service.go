@@ -57,7 +57,13 @@ func (u *UserService) Login(c echo.Context, userDTO *DTO) (string, error) {
 		return "", UserWrongPasswordErr
 	}
 
-	token, err := auth.GenerateToken(user.Email, user.Role, []byte(auth.GetJWTSecret().Secret))
+	userData := auth.UserData{
+		ID:    user.ID,
+		Email: user.Email,
+		Role:  user.Role,
+	}
+
+	token, err := auth.GenerateToken(userData, []byte(auth.GetJWTSecret().Secret))
 
 	if err != nil {
 		return "", UserTokenErr

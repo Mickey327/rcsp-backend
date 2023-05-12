@@ -38,6 +38,7 @@ func main() {
 		NewClaimsFunc: func(c echo.Context) jwt.Claims {
 			return new(auth.Claims)
 		},
+		TokenLookup: "header:Authorization:Bearer ,cookie:jwt",
 	})
 
 	categoryHandler := category.NewHandler(category.NewService(category.NewRepository(db)))
@@ -61,22 +62,18 @@ func main() {
 	e.POST("/api/product", productHandler.Create, jwtMiddleware)
 	e.PUT("/api/product", productHandler.Update, jwtMiddleware)
 
-	e.GET("/hello", func(c echo.Context) error {
-		u := c.Get("user").(*jwt.Token)
-		claims := u.Claims.(*auth.Claims)
-		email := claims.Email
-		role := claims.Role
-		return c.String(http.StatusOK, "Welcome "+email+", Your Role "+role+"!")
-	}, jwtMiddleware)
-
 	userHandler := user.NewHandler(user.NewService(user.NewRepository(db)))
-	e.POST("/register", userHandler.Register)
-	e.POST("/login", userHandler.Login)
+	e.POST("/api/register", userHandler.Register)
+	e.POST("/api/login", userHandler.Login)
+	e.GET("/api/logout", userHandler.Logout)
+	e.GET("/api/user", userHandler.GetAuthenticatedUser, jwtMiddleware)
 
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins:     []string{appConf.ClientHost + ":" + appConf.ClientPort},
 		AllowMethods:     []string{http.MethodGet, http.MethodPut, http.MethodPost, http.MethodDelete, http.MethodPatch},
 		AllowCredentials: true,
 	}))
+
+	e.Static("/", "static")
 	e.Logger.Fatal(e.Start(":" + appConf.ApiPort))
 }

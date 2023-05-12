@@ -31,8 +31,16 @@ func NewHandler(service Service) *Handler {
 }
 
 func (h *Handler) Create(c echo.Context) error {
-	_, role := auth.GetUserEmailAndRole(c)
-	if role != "admin" {
+	token, err := auth.GetUserToken(c)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, response.Response{
+			Code:    http.StatusBadRequest,
+			Message: "can't get jwt token from cookie",
+		})
+	}
+
+	userData := auth.GetUserDataFromToken(token)
+	if userData.Role != "admin" {
 		return c.JSON(http.StatusForbidden, response.Response{
 			Code:    http.StatusForbidden,
 			Message: "only admins can create products",
@@ -41,7 +49,7 @@ func (h *Handler) Create(c echo.Context) error {
 
 	productDTO := &DTO{}
 
-	if err := c.Bind(productDTO); err != nil {
+	if err = c.Bind(productDTO); err != nil {
 		return c.JSON(http.StatusInternalServerError, response.Response{
 			Code:    http.StatusInternalServerError,
 			Message: "error binding json data",
@@ -55,7 +63,7 @@ func (h *Handler) Create(c echo.Context) error {
 		})
 	}
 
-	_, err := h.service.Create(c, productDTO)
+	_, err = h.service.Create(c, productDTO)
 	if err != nil {
 		return c.JSON(http.StatusConflict, response.Response{
 			Code:    http.StatusConflict,
@@ -162,8 +170,16 @@ func (h *Handler) ReadAll(c echo.Context) error {
 }
 
 func (h *Handler) Update(c echo.Context) error {
-	_, role := auth.GetUserEmailAndRole(c)
-	if role != "admin" {
+	token, err := auth.GetUserToken(c)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, response.Response{
+			Code:    http.StatusBadRequest,
+			Message: "can't get jwt token from cookie",
+		})
+	}
+
+	userData := auth.GetUserDataFromToken(token)
+	if userData.Role != "admin" {
 		return c.JSON(http.StatusForbidden, response.Response{
 			Code:    http.StatusForbidden,
 			Message: "only admins can update products",
@@ -172,7 +188,7 @@ func (h *Handler) Update(c echo.Context) error {
 
 	productDTO := &DTO{}
 
-	if err := c.Bind(productDTO); err != nil {
+	if err = c.Bind(productDTO); err != nil {
 		return c.JSON(http.StatusInternalServerError, response.Response{
 			Code:    http.StatusInternalServerError,
 			Message: "error binding json data",
@@ -207,8 +223,16 @@ func (h *Handler) Update(c echo.Context) error {
 }
 
 func (h *Handler) Delete(c echo.Context) error {
-	_, role := auth.GetUserEmailAndRole(c)
-	if role != "admin" {
+	token, err := auth.GetUserToken(c)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, response.Response{
+			Code:    http.StatusBadRequest,
+			Message: "can't get jwt token from cookie",
+		})
+	}
+
+	userData := auth.GetUserDataFromToken(token)
+	if userData.Role != "admin" {
 		return c.JSON(http.StatusForbidden, response.Response{
 			Code:    http.StatusForbidden,
 			Message: "only admins can delete products",

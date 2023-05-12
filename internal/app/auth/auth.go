@@ -16,13 +16,19 @@ var (
 )
 
 type JWTSecret struct {
-	Secret        string `env:"JWT_SECRET"`
-	RefreshSecret string `env:"JWT_REFRESH_SECRET"`
+	Secret                string        `env:"JWT_SECRET"`
+	RefreshSecret         string        `env:"JWT_REFRESH_SECRET"`
+	ExpirationTimeInHours time.Duration `env:"EXPIRATION_TIME_IN_HOURS"`
+}
+
+type UserData struct {
+	ID    uint64 `json:"id"`
+	Email string `json:"email"`
+	Role  string `json:"role"`
 }
 
 type Claims struct {
-	Email string `json:"email"`
-	Role  string `json:"role"`
+	UserData
 	jwt.RegisteredClaims
 }
 
@@ -43,12 +49,11 @@ func GetJWTSecret() *JWTSecret {
 
 //TODO: Add refresh token
 
-func GenerateToken(email string, role string, secret []byte) (string, error) {
+func GenerateToken(user UserData, secret []byte) (string, error) {
 	claims := &Claims{
-		Email: email,
-		Role:  role,
+		UserData: user,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 72)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(GetJWTSecret().ExpirationTimeInHours)),
 		},
 	}
 
@@ -62,9 +67,24 @@ func GenerateToken(email string, role string, secret []byte) (string, error) {
 	return tokenString, nil
 }
 
-// GetUserEmailAndRole - helps to retrieve info about user from jwt token (will be helpful for other handlers)
-func GetUserEmailAndRole(c echo.Context) (string, string) {
-	u := c.Get("user").(*jwt.Token)
-	claims := u.Claims.(*Claims)
-	return claims.Email, claims.Role
+func GetUserDataFromToken(token *jwt.Token) UserData {
+	claims := token.Claims.(*Claims)
+	return claims.UserData
+}
+
+func GetUserToken(c echo.Context) (*jwt.Token, error) {
+	cookie, err := c.Cookie("jwt")
+	if err != nil {
+		return nil, err
+	}
+
+	token, err := jwt.ParseWithClaims(cookie.Value, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+		return []byte(GetJWTSecret().Secret), nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return token, nil
 }

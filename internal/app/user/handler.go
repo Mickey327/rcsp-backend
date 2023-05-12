@@ -3,7 +3,9 @@ package user
 import (
 	"errors"
 	"net/http"
+	"time"
 
+	"github.com/Mickey327/rcsp-backend/internal/app/auth"
 	"github.com/Mickey327/rcsp-backend/internal/app/response"
 	"github.com/labstack/echo/v4"
 )
@@ -89,9 +91,61 @@ func (h *Handler) Login(c echo.Context) error {
 		}
 	}
 
+	cookie := &http.Cookie{
+		Name:     "jwt",
+		Value:    token,
+		Expires:  time.Now().Add(auth.GetJWTSecret().ExpirationTimeInHours),
+		HttpOnly: true,
+		Secure:   true,
+	}
+	c.SetCookie(cookie)
+
 	return c.JSON(http.StatusOK, echo.Map{
 		"code":    http.StatusOK,
 		"message": "user was successfully logged in",
 		"token":   token,
+	})
+}
+
+func (h *Handler) GetAuthenticatedUser(c echo.Context) error {
+	token, err := auth.GetUserToken(c)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, response.Response{
+			Code:    http.StatusBadRequest,
+			Message: "can't get jwt token from cookie",
+		})
+	}
+
+	userData := auth.GetUserDataFromToken(token)
+
+	if token.Raw == "" || userData.ID <= 0 || userData.Email == "" || userData.Role == "" {
+		return c.JSON(http.StatusBadRequest, response.Response{
+			Code:    http.StatusBadRequest,
+			Message: "wrong user jwt token",
+		})
+	}
+
+	userDTO := &DTO{ID: userData.ID, Email: userData.Email, Role: userData.Role}
+
+	return c.JSON(http.StatusOK, echo.Map{
+		"code":  http.StatusOK,
+		"user":  userDTO,
+		"token": token.Raw,
+	})
+}
+
+func (h *Handler) Logout(c echo.Context) error {
+	cookie := &http.Cookie{
+		Name:     "jwt",
+		Value:    "",
+		Expires:  time.Now().Add(-time.Hour),
+		HttpOnly: true,
+	}
+
+	c.SetCookie(cookie)
+
+	return c.JSON(http.StatusOK, response.Response{
+		Code:    http.StatusOK,
+		Message: "user successfully logout",
 	})
 }
