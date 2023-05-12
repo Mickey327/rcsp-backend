@@ -2,7 +2,7 @@ package company
 
 type DTO struct {
 	ID   uint64 `json:"id,omitempty"`
-	Name string `json:"name"`
+	Name string `json:"name,omitempty"`
 }
 
 func (d *DTO) toCompany() *Company {

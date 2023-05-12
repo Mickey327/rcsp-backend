@@ -30,8 +30,8 @@ func NewHandler(service Service) *Handler {
 func (h *Handler) Create(c echo.Context) error {
 	token, err := auth.GetUserToken(c)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, response.Response{
-			Code:    http.StatusBadRequest,
+		return c.JSON(http.StatusUnauthorized, response.Response{
+			Code:    http.StatusUnauthorized,
 			Message: "can't get jwt token from cookie",
 		})
 	}
@@ -121,8 +121,8 @@ func (h *Handler) ReadAll(c echo.Context) error {
 func (h *Handler) Update(c echo.Context) error {
 	token, err := auth.GetUserToken(c)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, response.Response{
-			Code:    http.StatusBadRequest,
+		return c.JSON(http.StatusUnauthorized, response.Response{
+			Code:    http.StatusUnauthorized,
 			Message: "can't get jwt token from cookie",
 		})
 	}
@@ -174,8 +174,8 @@ func (h *Handler) Update(c echo.Context) error {
 func (h *Handler) Delete(c echo.Context) error {
 	token, err := auth.GetUserToken(c)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, response.Response{
-			Code:    http.StatusBadRequest,
+		return c.JSON(http.StatusUnauthorized, response.Response{
+			Code:    http.StatusUnauthorized,
 			Message: "can't get jwt token from cookie",
 		})
 	}

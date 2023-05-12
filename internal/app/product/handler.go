@@ -1,6 +1,8 @@
 package product
 
 import (
+	"errors"
+	"mime/multipart"
 	"net/http"
 	"strconv"
 
@@ -10,7 +12,7 @@ import (
 )
 
 type Service interface {
-	Create(c echo.Context, productDTO *DTO) (uint64, error)
+	Create(c echo.Context, productDTO *DTO, image *multipart.FileHeader) (uint64, error)
 	Read(c echo.Context, id uint64) (*DTO, error)
 	ReadAll(c echo.Context) ([]*DTO, error)
 	ReadByCategoryID(c echo.Context, categoryID uint64) ([]*DTO, error)
@@ -33,8 +35,8 @@ func NewHandler(service Service) *Handler {
 func (h *Handler) Create(c echo.Context) error {
 	token, err := auth.GetUserToken(c)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, response.Response{
-			Code:    http.StatusBadRequest,
+		return c.JSON(http.StatusUnauthorized, response.Response{
+			Code:    http.StatusUnauthorized,
 			Message: "can't get jwt token from cookie",
 		})
 	}
@@ -47,28 +49,79 @@ func (h *Handler) Create(c echo.Context) error {
 		})
 	}
 
-	productDTO := &DTO{}
+	name := c.FormValue("name")
+	description := c.FormValue("description")
 
-	if err = c.Bind(productDTO); err != nil {
-		return c.JSON(http.StatusInternalServerError, response.Response{
-			Code:    http.StatusInternalServerError,
-			Message: "error binding json data",
+	price, err := strconv.ParseUint(c.FormValue("price"), 10, 64)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, response.Response{
+			Code:    http.StatusBadRequest,
+			Message: "error parsing price value from form",
 		})
 	}
-	//TODO: ADD GOOD VALIDATION FOR COMPANY AND CATEGORY IDS
-	if productDTO.Name == "" || productDTO.Price <= 0 || productDTO.Image == "" || productDTO.CompanyID <= 0 || productDTO.CategoryID <= 0 || productDTO.Stock < 0 {
+
+	companyID, err := strconv.ParseUint(c.FormValue("companyID"), 10, 64)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, response.Response{
+			Code:    http.StatusBadRequest,
+			Message: "error parsing company value from form",
+		})
+	}
+
+	categoryID, err := strconv.ParseUint(c.FormValue("categoryID"), 10, 64)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, response.Response{
+			Code:    http.StatusBadRequest,
+			Message: "error parsing category value from form",
+		})
+	}
+
+	stock, err := strconv.ParseUint(c.FormValue("stock"), 10, 64)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, response.Response{
+			Code:    http.StatusBadRequest,
+			Message: "error parsing stock value from form",
+		})
+	}
+
+	file, err := c.FormFile("file")
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, response.Response{
+			Code:    http.StatusBadRequest,
+			Message: "error getting image from form",
+		})
+	}
+
+	productDTO := &DTO{
+		Name:        name,
+		Description: description,
+		Price:       price,
+		CompanyID:   companyID,
+		CategoryID:  categoryID,
+		Stock:       stock,
+		Image:       file.Filename,
+	}
+
+	if productDTO.Name == "" || productDTO.Price <= 0 || productDTO.CompanyID <= 0 || productDTO.CategoryID <= 0 || productDTO.Stock < 0 {
 		return c.JSON(http.StatusBadRequest, response.Response{
 			Code:    http.StatusBadRequest,
 			Message: "wrong values format provided",
 		})
 	}
 
-	_, err = h.service.Create(c, productDTO)
+	_, err = h.service.Create(c, productDTO, file)
 	if err != nil {
-		return c.JSON(http.StatusConflict, response.Response{
-			Code:    http.StatusConflict,
-			Message: ProductAlreadyExistsErr.Error(),
-		})
+		if errors.Is(err, ProductAlreadyExistsErr) {
+			return c.JSON(http.StatusConflict, response.Response{
+				Code:    http.StatusConflict,
+				Message: ProductAlreadyExistsErr.Error(),
+			})
+		} else {
+			return c.JSON(http.StatusInternalServerError, response.Response{
+				Code:    http.StatusInternalServerError,
+				Message: "error uploading product",
+			})
+		}
 	}
 
 	return c.JSON(http.StatusOK, response.Response{
@@ -172,8 +225,8 @@ func (h *Handler) ReadAll(c echo.Context) error {
 func (h *Handler) Update(c echo.Context) error {
 	token, err := auth.GetUserToken(c)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, response.Response{
-			Code:    http.StatusBadRequest,
+		return c.JSON(http.StatusUnauthorized, response.Response{
+			Code:    http.StatusUnauthorized,
 			Message: "can't get jwt token from cookie",
 		})
 	}
@@ -225,8 +278,8 @@ func (h *Handler) Update(c echo.Context) error {
 func (h *Handler) Delete(c echo.Context) error {
 	token, err := auth.GetUserToken(c)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, response.Response{
-			Code:    http.StatusBadRequest,
+		return c.JSON(http.StatusUnauthorized, response.Response{
+			Code:    http.StatusUnauthorized,
 			Message: "can't get jwt token from cookie",
 		})
 	}

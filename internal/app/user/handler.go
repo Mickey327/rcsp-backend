@@ -43,9 +43,9 @@ func (h *Handler) Register(c echo.Context) error {
 
 	if err := h.service.Register(c, userDTO); err != nil {
 		return c.JSON(
-			http.StatusInternalServerError, response.Response{
-				Code:    http.StatusInternalServerError,
-				Message: "error happened during user registration",
+			http.StatusBadRequest, response.Response{
+				Code:    http.StatusBadRequest,
+				Message: "user with such email already exists",
 			})
 	}
 
@@ -96,7 +96,6 @@ func (h *Handler) Login(c echo.Context) error {
 		Value:    token,
 		Expires:  time.Now().Add(auth.GetJWTSecret().ExpirationTimeInHours),
 		HttpOnly: true,
-		Secure:   true,
 	}
 	c.SetCookie(cookie)
 
@@ -110,8 +109,8 @@ func (h *Handler) Login(c echo.Context) error {
 func (h *Handler) GetAuthenticatedUser(c echo.Context) error {
 	token, err := auth.GetUserToken(c)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, response.Response{
-			Code:    http.StatusBadRequest,
+		return c.JSON(http.StatusUnauthorized, response.Response{
+			Code:    http.StatusUnauthorized,
 			Message: "can't get jwt token from cookie",
 		})
 	}

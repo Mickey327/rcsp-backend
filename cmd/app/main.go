@@ -9,6 +9,7 @@ import (
 	"github.com/Mickey327/rcsp-backend/internal/app/category"
 	"github.com/Mickey327/rcsp-backend/internal/app/company"
 	appConfig "github.com/Mickey327/rcsp-backend/internal/app/config"
+	order_item "github.com/Mickey327/rcsp-backend/internal/app/orderItem"
 	"github.com/Mickey327/rcsp-backend/internal/app/product"
 	"github.com/Mickey327/rcsp-backend/internal/app/user"
 	dbConfig "github.com/Mickey327/rcsp-backend/internal/db/config"
@@ -67,6 +68,9 @@ func main() {
 	e.POST("/api/login", userHandler.Login)
 	e.GET("/api/logout", userHandler.Logout)
 	e.GET("/api/user", userHandler.GetAuthenticatedUser, jwtMiddleware)
+
+	cartHandler := order_item.NewHandler(order_item.NewService(order_item.NewRepository(db)))
+	e.POST("api/cart", cartHandler.ChangeOrderItemQuantity)
 
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins:     []string{appConf.ClientHost + ":" + appConf.ClientPort},

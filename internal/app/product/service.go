@@ -2,6 +2,10 @@ package product
 
 import (
 	"context"
+	"io"
+	"log"
+	"mime/multipart"
+	"os"
 
 	"github.com/labstack/echo/v4"
 )
@@ -27,11 +31,35 @@ func NewService(repository Repository) *ProductService {
 	}
 }
 
-func (s *ProductService) Create(c echo.Context, productDTO *DTO) (uint64, error) {
+func (s *ProductService) Create(c echo.Context, productDTO *DTO, file *multipart.FileHeader) (uint64, error) {
+	src, err := file.Open()
+	if err != nil {
+		log.Println("file open", err)
+		return 0, err
+	}
+	defer src.Close()
+
+	path, _ := os.Getwd()
+	path += "/static/" + file.Filename
+	// Destination
+	dst, err := os.Create(path)
+	if err != nil {
+		log.Println(os.Getwd())
+		log.Println("Os create static:", err)
+		return 0, err
+	}
+	defer dst.Close()
+
+	// Copy
+	if _, err = io.Copy(dst, src); err != nil {
+		log.Println("io copy dst", err)
+		return 0, err
+	}
+
 	id, err := s.repository.Create(c.Request().Context(), productDTO.ToProduct())
 
 	if err != nil {
-		return 0, err
+		return 0, ProductAlreadyExistsErr
 	}
 
 	return id, nil
