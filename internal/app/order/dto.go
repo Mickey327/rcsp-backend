@@ -6,9 +6,10 @@ type DTO struct {
 	ID         uint64           `json:"id,omitempty"`
 	Total      uint64           `json:"total,omitempty"`
 	Status     string           `json:"status,omitempty"`
-	IsArranged bool             `json:"is_finished,omitempty"`
+	IsArranged bool             `json:"is_arranged"`
 	UserID     uint64           `json:"user_id,omitempty"`
-	OrderItems []*orderItem.DTO `json:"order_items,omitempty"`
+	Count      uint64           `json:"count,omitempty"`
+	OrderItems []*orderItem.DTO `json:"order_items"`
 }
 
 func (d *DTO) ToOrder() *Order {
@@ -18,6 +19,7 @@ func (d *DTO) ToOrder() *Order {
 		Status:     d.Status,
 		IsArranged: d.IsArranged,
 		UserID:     d.UserID,
+		Count:      d.Count,
 		OrderItems: orderItem.ToOrderItems(d.OrderItems),
 	}
 }

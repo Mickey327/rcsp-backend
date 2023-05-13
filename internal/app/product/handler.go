@@ -7,6 +7,8 @@ import (
 	"strconv"
 
 	"github.com/Mickey327/rcsp-backend/internal/app/auth"
+	"github.com/Mickey327/rcsp-backend/internal/app/category"
+	"github.com/Mickey327/rcsp-backend/internal/app/company"
 	"github.com/Mickey327/rcsp-backend/internal/app/response"
 	"github.com/labstack/echo/v4"
 )
@@ -14,6 +16,7 @@ import (
 type Service interface {
 	Create(c echo.Context, productDTO *DTO, image *multipart.FileHeader) (uint64, error)
 	Read(c echo.Context, id uint64) (*DTO, error)
+	ReadEager(c echo.Context, id uint64) (*DTO, error)
 	ReadAll(c echo.Context) ([]*DTO, error)
 	ReadByCategoryID(c echo.Context, categoryID uint64) ([]*DTO, error)
 	ReadByCompanyID(c echo.Context, companyID uint64) ([]*DTO, error)
@@ -33,20 +36,10 @@ func NewHandler(service Service) *Handler {
 }
 
 func (h *Handler) Create(c echo.Context) error {
-	token, err := auth.GetUserToken(c)
-	if err != nil {
-		return c.JSON(http.StatusUnauthorized, response.Response{
-			Code:    http.StatusUnauthorized,
-			Message: "can't get jwt token from cookie",
-		})
-	}
+	_, err := auth.GetUserDataAndCheckRole(c, "admin")
 
-	userData := auth.GetUserDataFromToken(token)
-	if userData.Role != "admin" {
-		return c.JSON(http.StatusForbidden, response.Response{
-			Code:    http.StatusForbidden,
-			Message: "only admins can create products",
-		})
+	if err != nil {
+		return err
 	}
 
 	name := c.FormValue("name")
@@ -92,24 +85,31 @@ func (h *Handler) Create(c echo.Context) error {
 		})
 	}
 
-	productDTO := &DTO{
+	comp := &company.DTO{
+		ID: companyID,
+	}
+	cat := &category.DTO{
+		ID: categoryID,
+	}
+
+	productDTO := DTO{
 		Name:        name,
 		Description: description,
 		Price:       price,
-		CompanyID:   companyID,
-		CategoryID:  categoryID,
+		Company:     comp,
+		Category:    cat,
 		Stock:       stock,
 		Image:       file.Filename,
 	}
 
-	if productDTO.Name == "" || productDTO.Price <= 0 || productDTO.CompanyID <= 0 || productDTO.CategoryID <= 0 || productDTO.Stock < 0 {
+	if productDTO.Name == "" || productDTO.Price <= 0 || productDTO.Company.ID <= 0 || productDTO.Category.ID <= 0 || productDTO.Stock < 0 {
 		return c.JSON(http.StatusBadRequest, response.Response{
 			Code:    http.StatusBadRequest,
 			Message: "wrong values format provided",
 		})
 	}
 
-	_, err = h.service.Create(c, productDTO, file)
+	_, err = h.service.Create(c, &productDTO, file)
 	if err != nil {
 		if errors.Is(err, ProductAlreadyExistsErr) {
 			return c.JSON(http.StatusConflict, response.Response{
@@ -145,7 +145,16 @@ func (h *Handler) Read(c echo.Context) error {
 		})
 	}
 
-	productDTO, err := h.service.Read(c, id)
+	var productDTO *DTO
+
+	fetchType := c.QueryParam("fetch")
+
+	if fetchType == "eager" {
+		productDTO, err = h.service.ReadEager(c, id)
+	} else {
+		productDTO, err = h.service.Read(c, id)
+	}
+
 	if err != nil {
 		return c.JSON(http.StatusNotFound, response.Response{
 			Code:    http.StatusNotFound,
@@ -160,14 +169,14 @@ func (h *Handler) Read(c echo.Context) error {
 }
 
 func (h *Handler) ReadAll(c echo.Context) error {
-	category := c.QueryParam("categoryID")
-	company := c.QueryParam("companyID")
+	categoryIDString := c.QueryParam("categoryID")
+	companyIDString := c.QueryParam("companyID")
 	var categoryID, companyID uint64
 	var productDTOs []*DTO
 	var err error
 
-	if company != "" {
-		companyID, err = strconv.ParseUint(c.QueryParam("companyID"), 10, 64)
+	if companyIDString != "" {
+		companyID, err = strconv.ParseUint(companyIDString, 10, 64)
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, response.Response{
 				Code:    http.StatusBadRequest,
@@ -183,8 +192,8 @@ func (h *Handler) ReadAll(c echo.Context) error {
 		}
 	}
 
-	if category != "" {
-		categoryID, err = strconv.ParseUint(c.QueryParam("categoryID"), 10, 64)
+	if categoryIDString != "" {
+		categoryID, err = strconv.ParseUint(categoryIDString, 10, 64)
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, response.Response{
 				Code:    http.StatusBadRequest,
@@ -223,38 +232,29 @@ func (h *Handler) ReadAll(c echo.Context) error {
 }
 
 func (h *Handler) Update(c echo.Context) error {
-	token, err := auth.GetUserToken(c)
+	_, err := auth.GetUserDataAndCheckRole(c, "admin")
+
 	if err != nil {
-		return c.JSON(http.StatusUnauthorized, response.Response{
-			Code:    http.StatusUnauthorized,
-			Message: "can't get jwt token from cookie",
-		})
+		return err
 	}
 
-	userData := auth.GetUserDataFromToken(token)
-	if userData.Role != "admin" {
-		return c.JSON(http.StatusForbidden, response.Response{
-			Code:    http.StatusForbidden,
-			Message: "only admins can update products",
-		})
-	}
+	productDTO := DTO{}
 
-	productDTO := &DTO{}
-
-	if err = c.Bind(productDTO); err != nil {
+	if err = c.Bind(&productDTO); err != nil {
 		return c.JSON(http.StatusInternalServerError, response.Response{
 			Code:    http.StatusInternalServerError,
 			Message: "error binding json data",
 		})
 	}
-	if productDTO.ID <= 0 || productDTO.Name == "" || productDTO.Price <= 0 || productDTO.Image == "" || productDTO.CompanyID <= 0 || productDTO.CategoryID <= 0 || productDTO.Stock < 0 {
+
+	if productDTO.Company == nil || productDTO.Category == nil || productDTO.ID <= 0 || productDTO.Name == "" || productDTO.Price <= 0 || productDTO.Image == "" || productDTO.Company.ID <= 0 || productDTO.Category.ID <= 0 || productDTO.Stock < 0 {
 		return c.JSON(http.StatusBadRequest, response.Response{
 			Code:    http.StatusBadRequest,
 			Message: "wrong values format provided",
 		})
 	}
 
-	isUpdated, err := h.service.Update(c, productDTO)
+	isUpdated, err := h.service.Update(c, &productDTO)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, response.Response{
 			Code:    http.StatusInternalServerError,
@@ -276,20 +276,10 @@ func (h *Handler) Update(c echo.Context) error {
 }
 
 func (h *Handler) Delete(c echo.Context) error {
-	token, err := auth.GetUserToken(c)
-	if err != nil {
-		return c.JSON(http.StatusUnauthorized, response.Response{
-			Code:    http.StatusUnauthorized,
-			Message: "can't get jwt token from cookie",
-		})
-	}
+	_, err := auth.GetUserDataAndCheckRole(c, "admin")
 
-	userData := auth.GetUserDataFromToken(token)
-	if userData.Role != "admin" {
-		return c.JSON(http.StatusForbidden, response.Response{
-			Code:    http.StatusForbidden,
-			Message: "only admins can delete products",
-		})
+	if err != nil {
+		return err
 	}
 
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)

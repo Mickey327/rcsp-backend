@@ -5,7 +5,7 @@ type DTO struct {
 	Name string `json:"name,omitempty"`
 }
 
-func (d *DTO) toCompany() *Company {
+func (d *DTO) ToCompany() *Company {
 	return &Company{
 		ID:   d.ID,
 		Name: d.Name,

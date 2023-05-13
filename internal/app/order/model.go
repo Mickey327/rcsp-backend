@@ -14,7 +14,8 @@ type Order struct {
 	UpdatedAt  time.Time `db:"updated_at"`
 	IsArranged bool      `db:"is_arranged"`
 	UserID     uint64    `db:"user_id"`
-	OrderItems []*orderItem.OrderItem
+	Count      uint64
+	OrderItems []*orderItem.OrderItem `scan:"notate"`
 }
 
 func (o *Order) ToDTO() *DTO {
@@ -24,6 +25,7 @@ func (o *Order) ToDTO() *DTO {
 		Status:     o.Status,
 		IsArranged: o.IsArranged,
 		UserID:     o.UserID,
+		Count:      o.Count,
 		OrderItems: orderItem.ToDTOs(o.OrderItems),
 	}
 }

@@ -1,4 +1,4 @@
-package review
+package commentary
 
 import (
 	"context"
@@ -14,4 +14,24 @@ type DB interface {
 	Exec(ctx context.Context, query string, args ...interface{}) (pgconn.CommandTag, error)
 	ExecQueryRow(ctx context.Context, query string, args ...interface{}) pgx.Row
 	GetPool() *pgxpool.Pool
+}
+
+type CommentaryRepository struct {
+	db DB
+}
+
+func (r *CommentaryRepository) Create() {
+
+}
+
+func (r *CommentaryRepository) ReadByProductID() {
+
+}
+
+func (r *CommentaryRepository) Update() {
+
+}
+
+func (r *CommentaryRepository) Delete() {
+
 }

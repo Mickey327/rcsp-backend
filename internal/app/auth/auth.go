@@ -2,9 +2,11 @@ package auth
 
 import (
 	"log"
+	"net/http"
 	"sync"
 	"time"
 
+	"github.com/Mickey327/rcsp-backend/internal/app/response"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/labstack/echo/v4"
@@ -87,4 +89,31 @@ func GetUserToken(c echo.Context) (*jwt.Token, error) {
 	}
 
 	return token, nil
+}
+
+func GetUserDataAndCheckRole(c echo.Context, role string) (*UserData, error) {
+	token, err := GetUserToken(c)
+	if err != nil {
+		return nil, c.JSON(http.StatusUnauthorized, response.Response{
+			Code:    http.StatusUnauthorized,
+			Message: "can't get jwt token from cookie",
+		})
+	}
+
+	userData := GetUserDataFromToken(token)
+	if userData.Role != role {
+		return nil, c.JSON(http.StatusForbidden, response.Response{
+			Code:    http.StatusForbidden,
+			Message: "only " + userData.Role + " can do that action",
+		})
+	}
+
+	if userData.ID <= 0 {
+		return nil, c.JSON(http.StatusBadRequest, response.Response{
+			Code:    http.StatusBadRequest,
+			Message: "wrong user id value",
+		})
+	}
+
+	return &userData, nil
 }

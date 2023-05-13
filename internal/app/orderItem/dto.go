@@ -1,18 +1,22 @@
 package orderItem
 
+import "github.com/Mickey327/rcsp-backend/internal/app/product"
+
 type DTO struct {
-	OrderID       uint64 `json:"order_id,omitempty"`
-	ProductID     uint64 `json:"product_id,omitempty"`
-	Quantity      uint64 `json:"quantity,omitempty"`
-	QuantityDelta int    `json:"quantity_delta,omitempty"`
+	OrderID  uint64       `json:"order_id,omitempty"`
+	Product  *product.DTO `json:"product,omitempty"`
+	Quantity int          `json:"quantity,omitempty"`
 }
 
 func (d *DTO) ToOrderItem() *OrderItem {
-	return &OrderItem{
-		OrderID:   d.OrderID,
-		ProductID: d.ProductID,
-		Quantity:  d.Quantity,
+	orderItem := &OrderItem{
+		OrderID:  d.OrderID,
+		Quantity: d.Quantity,
 	}
+	if d.Product != nil {
+		orderItem.Product = d.Product.ToProduct()
+	}
+	return orderItem
 }
 
 func ToOrderItems(orderItemDTOs []*DTO) []*OrderItem {

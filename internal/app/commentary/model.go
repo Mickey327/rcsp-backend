@@ -1,8 +1,8 @@
-package review
+package commentary
 
 import "time"
 
-type Review struct {
+type Commentary struct {
 	ID        uint64    `db:"id"`
 	UserID    uint64    `db:"user_id"`
 	ProductID uint64    `db:"product_id"`

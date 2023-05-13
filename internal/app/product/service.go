@@ -13,6 +13,7 @@ import (
 type Repository interface {
 	Create(ctx context.Context, product *Product) (uint64, error)
 	Read(ctx context.Context, id uint64) (*Product, error)
+	ReadEager(ctx context.Context, id uint64) (*Product, error)
 	ReadAll(ctx context.Context) ([]*Product, error)
 	ReadByCategoryID(ctx context.Context, categoryID uint64) ([]*Product, error)
 	ReadByCompanyID(ctx context.Context, companyID uint64) ([]*Product, error)
@@ -67,6 +68,16 @@ func (s *ProductService) Create(c echo.Context, productDTO *DTO, file *multipart
 
 func (s *ProductService) Read(c echo.Context, id uint64) (*DTO, error) {
 	product, err := s.repository.Read(c.Request().Context(), id)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return product.ToDTO(), nil
+}
+
+func (s *ProductService) ReadEager(c echo.Context, id uint64) (*DTO, error) {
+	product, err := s.repository.ReadEager(c.Request().Context(), id)
 
 	if err != nil {
 		return nil, err

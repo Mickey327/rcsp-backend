@@ -23,7 +23,7 @@ func NewService(repository Repository) *CategoryService {
 }
 
 func (s *CategoryService) Create(c echo.Context, categoryDTO *DTO) (uint64, error) {
-	id, err := s.repository.Create(c.Request().Context(), categoryDTO.toCategory())
+	id, err := s.repository.Create(c.Request().Context(), categoryDTO.ToCategory())
 
 	if err != nil {
 		return 0, err
@@ -57,7 +57,7 @@ func (s *CategoryService) ReadAll(c echo.Context) ([]*DTO, error) {
 }
 
 func (s *CategoryService) Update(c echo.Context, categoryDTO *DTO) (bool, error) {
-	isUpdated, err := s.repository.Update(c.Request().Context(), categoryDTO.toCategory())
+	isUpdated, err := s.repository.Update(c.Request().Context(), categoryDTO.ToCategory())
 
 	if err != nil {
 		return false, err

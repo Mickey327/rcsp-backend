@@ -25,7 +25,7 @@ func NewService(repository Repository) *CompanyService {
 }
 
 func (s *CompanyService) Create(c echo.Context, companyDTO *DTO) (uint64, error) {
-	id, err := s.repository.Create(c.Request().Context(), companyDTO.toCompany())
+	id, err := s.repository.Create(c.Request().Context(), companyDTO.ToCompany())
 
 	if err != nil {
 		return 0, err
@@ -59,7 +59,7 @@ func (s *CompanyService) ReadAll(c echo.Context) ([]*DTO, error) {
 }
 
 func (s *CompanyService) Update(c echo.Context, companyDTO *DTO) (bool, error) {
-	isUpdated, err := s.repository.Update(c.Request().Context(), companyDTO.toCompany())
+	isUpdated, err := s.repository.Update(c.Request().Context(), companyDTO.ToCompany())
 
 	if err != nil {
 		return false, err

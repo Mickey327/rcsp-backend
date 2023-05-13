@@ -29,13 +29,37 @@ func NewRepository(db DB) *ProductRepository {
 func (r *ProductRepository) Create(ctx context.Context, product *Product) (uint64, error) {
 	var id uint64
 	err := r.db.ExecQueryRow(ctx, `INSERT INTO products(name, description, price, stock, image, category_id, company_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
-		product.Name, product.Description, product.Price, product.Stock, product.Image, product.CategoryID, product.CompanyID).Scan(&id)
+		product.Name, product.Description, product.Price, product.Stock, product.Image, product.Category.ID, product.Company.ID).Scan(&id)
 	return id, errors.Wrapf(err, "error creating product: %v", product)
 }
 
 func (r *ProductRepository) Read(ctx context.Context, id uint64) (*Product, error) {
 	var p Product
-	err := r.db.Get(ctx, &p, "SELECT id, name, description, price, stock, image, category_id, company_id, created_at, updated_at FROM products WHERE id = $1", id)
+	err := r.db.Get(ctx, &p, `
+		SELECT products.id, products.name, products.description, products.price, products.stock, products.image, 
+		       products.category_id as "category.id", products.company_id as "company.id", products.created_at, products.updated_at 
+		FROM products 
+		WHERE id = $1`, id)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ProductNotFoundErr
+	}
+	return &p, nil
+}
+
+func (r *ProductRepository) ReadEager(ctx context.Context, id uint64) (*Product, error) {
+	var p Product
+	err := r.db.Get(ctx, &p,
+		`
+		SELECT 
+        	products.id, products.name, products.description, products.price, products.stock,
+        	products.image, products.created_at, products.updated_at,
+        	c.id as "category.id", c.name as "category.name", c.updated_at as "category.updated_at", c.created_at as "category.created_at",
+       		c2.id as "company.id", c2.name as "company.name", c2.updated_at as "company.updated_at", c2.created_at as "company.created_at"
+		FROM products
+			JOIN categories c on products.category_id = c.id
+			JOIN companies c2 on c2.id = products.company_id
+		WHERE products.id = $1
+		`, id)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ProductNotFoundErr
 	}
@@ -45,14 +69,18 @@ func (r *ProductRepository) Read(ctx context.Context, id uint64) (*Product, erro
 func (r *ProductRepository) ReadAll(ctx context.Context) ([]*Product, error) {
 	products := make([]*Product, 0)
 	err := r.db.Select(ctx, &products,
-		"SELECT id, name, description, price, stock, image, category_id, company_id, created_at, updated_at FROM products")
+		`SELECT 
+    			id, name, description, price, stock, image,
+    			category_id as "category.id", company_id as "company.id", 
+    			created_at, updated_at 
+				FROM products`)
 	return products, errors.Wrap(err, "error getting products")
 }
 
 func (r *ProductRepository) ReadByCategoryID(ctx context.Context, categoryID uint64) ([]*Product, error) {
 	products := make([]*Product, 0)
 	err := r.db.Select(ctx, &products,
-		"SELECT id, name, description, price, stock, image, category_id, company_id, created_at, updated_at FROM products WHERE category_id = $1",
+		`SELECT id, name, description, price, stock, image, category_id as "category.id", company_id as "company.id", created_at, updated_at FROM products WHERE category_id = $1`,
 		categoryID)
 	return products, errors.Wrapf(err, "error getting products by category id: %d", categoryID)
 }
@@ -60,7 +88,7 @@ func (r *ProductRepository) ReadByCategoryID(ctx context.Context, categoryID uin
 func (r *ProductRepository) ReadByCompanyID(ctx context.Context, companyID uint64) ([]*Product, error) {
 	products := make([]*Product, 0)
 	err := r.db.Select(ctx, &products,
-		"SELECT id, name, description, price, stock, image, category_id, company_id, created_at, updated_at FROM products WHERE company_id = $1",
+		`SELECT id, name, description, price, stock, image, category_id as "category.id", company_id as "company.id", created_at, updated_at FROM products WHERE company_id = $1`,
 		companyID)
 	return products, errors.Wrapf(err, "error getting products by category id: %d", companyID)
 }
@@ -68,7 +96,7 @@ func (r *ProductRepository) ReadByCompanyID(ctx context.Context, companyID uint6
 func (r *ProductRepository) ReadByCompanyIDAndCategoryID(ctx context.Context, companyID, categoryID uint64) ([]*Product, error) {
 	products := make([]*Product, 0)
 	err := r.db.Select(ctx, &products,
-		"SELECT id, name, description, price, stock, image, category_id, company_id, created_at, updated_at FROM products WHERE company_id = $1 AND category_id = $2",
+		`SELECT id, name, description, price, stock, image, category_id as "category.id", company_id as "company.id", created_at, updated_at FROM products WHERE company_id = $1 AND category_id = $2`,
 		companyID, categoryID)
 	return products, errors.Wrapf(err, "error getting products by company id and category id: %d; %d", companyID, categoryID)
 }
@@ -77,7 +105,7 @@ func (r *ProductRepository) Update(ctx context.Context, product *Product) (bool,
 	product.UpdatedAt = time.Now().UTC()
 	result, err := r.db.Exec(ctx,
 		"UPDATE products SET name = $1, description = $2, price = $3, stock = $4, image = $5, category_id = $6, company_id = $7, updated_at = $8 WHERE id = $9",
-		product.Name, product.Description, product.Price, product.Stock, product.Image, product.CategoryID, product.CompanyID, product.UpdatedAt, product.ID)
+		product.Name, product.Description, product.Price, product.Stock, product.Image, product.Category.ID, product.Company.ID, product.UpdatedAt, product.ID)
 	return result.RowsAffected() > 0, errors.Wrapf(err, "error updating product: %v", product)
 }
 

@@ -86,21 +86,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE PROCEDURE order_items_procedure(orders_id BIGINT, products_id BIGINT, quantity_delta BIGINT)
-    LANGUAGE SQL
-    AS $$
-MERGE INTO order_items w
-USING (VALUES (orders_id,
-               products_id,
-               quantity_delta)) s
-    ON (s.column1 = w.order_id AND s.column2 = w.product_id)
-    WHEN NOT MATCHED AND s.column3 > 0 THEN
-        INSERT VALUES(s.column1, s.column2, s.column3)
-    WHEN MATCHED AND w.quantity + s.column3 > 0 THEN
-        UPDATE SET quantity = w.quantity + s.column3
-    WHEN MATCHED THEN
-        DELETE;
-$$;
 
 CREATE TRIGGER update_order_total_price
     AFTER INSERT OR UPDATE OR DELETE ON order_items
@@ -110,7 +95,6 @@ CREATE TRIGGER update_order_total_price
 -- +goose Down
 -- +goose StatementBegin
 DROP TRIGGER IF EXISTS update_order_total_price ON order_items;
-DROP PROCEDURE IF EXISTS order_items_procedure(order_id BIGINT, product_id BIGINT, quantity_delta BIGINT);
 DROP TABLE order_items;
 DROP TABLE orders;
 DROP TABLE reviews;

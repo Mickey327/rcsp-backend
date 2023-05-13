@@ -6,10 +6,12 @@ import (
 	"net/http"
 
 	"github.com/Mickey327/rcsp-backend/internal/app/auth"
+	"github.com/Mickey327/rcsp-backend/internal/app/cart"
 	"github.com/Mickey327/rcsp-backend/internal/app/category"
 	"github.com/Mickey327/rcsp-backend/internal/app/company"
 	appConfig "github.com/Mickey327/rcsp-backend/internal/app/config"
-	order_item "github.com/Mickey327/rcsp-backend/internal/app/orderItem"
+	"github.com/Mickey327/rcsp-backend/internal/app/order"
+	"github.com/Mickey327/rcsp-backend/internal/app/orderItem"
 	"github.com/Mickey327/rcsp-backend/internal/app/product"
 	"github.com/Mickey327/rcsp-backend/internal/app/user"
 	dbConfig "github.com/Mickey327/rcsp-backend/internal/db/config"
@@ -58,7 +60,7 @@ func main() {
 
 	productHandler := product.NewHandler(product.NewService(product.NewRepository(db)))
 	e.GET("/api/product/:id", productHandler.Read)
-	e.GET("/api/product", productHandler.ReadAll)
+	e.GET("/api/product", productHandler.ReadAll) // ?categoryID&companyID
 	e.DELETE("/api/product/:id", productHandler.Delete, jwtMiddleware)
 	e.POST("/api/product", productHandler.Create, jwtMiddleware)
 	e.PUT("/api/product", productHandler.Update, jwtMiddleware)
@@ -69,8 +71,13 @@ func main() {
 	e.GET("/api/logout", userHandler.Logout)
 	e.GET("/api/user", userHandler.GetAuthenticatedUser, jwtMiddleware)
 
-	cartHandler := order_item.NewHandler(order_item.NewService(order_item.NewRepository(db)))
-	e.POST("api/cart", cartHandler.ChangeOrderItemQuantity)
+	cartHandler := cart.NewHandler(cart.NewService(order.NewRepository(db), orderItem.NewRepository(db)))
+	e.POST("/api/cart", cartHandler.UpdateCart, jwtMiddleware)       // ?orderID&productID
+	e.DELETE("/api/cart", cartHandler.RemoveFromCart, jwtMiddleware) // ?orderID&productID
+
+	orderHandler := order.NewHandler(order.NewService(order.NewRepository(db)))
+	e.GET("/api/order", orderHandler.ReadCurrentUserArrangingOrder, jwtMiddleware)
+	e.POST("/api/order", orderHandler.Create, jwtMiddleware)
 
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins:     []string{appConf.ClientHost + ":" + appConf.ClientPort},

@@ -1,21 +1,28 @@
 package orderItem
 
-import "time"
+import (
+	"time"
+
+	"github.com/Mickey327/rcsp-backend/internal/app/product"
+)
 
 type OrderItem struct {
-	OrderID   uint64    `db:"order_id"`
-	ProductID uint64    `db:"product_id"`
-	Quantity  uint64    `db:"quantity"`
-	CreatedAt time.Time `db:"created_at"`
-	UpdatedAt time.Time `db:"updated_at"`
+	OrderID   uint64           `db:"order_id"`
+	Quantity  int              `db:"quantity"`
+	CreatedAt time.Time        `db:"created_at"`
+	UpdatedAt time.Time        `db:"updated_at"`
+	Product   *product.Product `scan:"notate"`
 }
 
 func (o *OrderItem) ToDTO() *DTO {
-	return &DTO{
-		OrderID:   o.OrderID,
-		ProductID: o.ProductID,
-		Quantity:  o.Quantity,
+	orderItemDTO := &DTO{
+		OrderID:  o.OrderID,
+		Quantity: o.Quantity,
 	}
+	if o.Product != nil {
+		orderItemDTO.Product = o.Product.ToDTO()
+	}
+	return orderItemDTO
 }
 
 func ToDTOs(orderItems []*OrderItem) []*DTO {
