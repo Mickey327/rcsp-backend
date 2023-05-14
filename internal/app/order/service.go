@@ -61,7 +61,7 @@ func (s *OrderService) Update(c echo.Context, dto *DTO) (bool, error) {
 		cfg := config.GetConfig()
 		message := fmt.Sprintf("Здравствуйте, спасибо что оформили у нас заказ! Для оплаты переведите деньги на карту "+
 			"1234 5678 9012 3456 или по номеру телефона +7(123)456-78-90, указав в сообщении с переводом вашу почту на сайте "+
-			"Статус заказа и его содержание можете отслеживать по ссылке: %s:%s/checkout?orderID=%d", cfg.ClientHost, cfg.ClientPort, dto.ID)
+			"Статус заказа и его содержание можете отслеживать по ссылке: %s/checkout?orderID=%d", cfg.OuterClientAddress, dto.ID)
 		m := mail.New(cfg.Email, email, "Заказ был успешно взят в обработку", message)
 		m.SendMail()
 		_, err = s.repository.Create(c.Request().Context(), dto.UserID)

@@ -21,4 +21,4 @@ RUN go mod tidy
 RUN go build -o bin/api ./cmd/app/main.go
 
 # Command to run the executable
-CMD ["make","run"]
+CMD ["bin/api"]

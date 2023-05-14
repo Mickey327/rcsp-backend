@@ -13,14 +13,15 @@ var (
 )
 
 type Config struct {
-	ApiPort      string `env:"API_PORT"`
-	ApiHost      string `env:"API_HOST"`
-	ClientHost   string `env:"CLIENT_HOST"`
-	ClientPort   string `env:"CLIENT_PORT"`
-	Email        string `env:"MAIL_EMAIL"`
-	MailHost     string `env:"MAIL_HOST"`
-	MailPort     int    `env:"MAIL_PORT"`
-	MailPassword string `env:"MAIL_PASSWORD"`
+	ApiPort            string `env:"API_PORT"`
+	ApiHost            string `env:"API_HOST"`
+	OuterClientAddress string `env:"OUTER_ADDRESS"`
+	ClientHost         string `env:"CLIENT_HOST"`
+	ClientPort         string `env:"CLIENT_PORT"`
+	Email              string `env:"MAIL_EMAIL"`
+	MailHost           string `env:"MAIL_HOST"`
+	MailPort           int    `env:"MAIL_PORT"`
+	MailPassword       string `env:"MAIL_PASSWORD"`
 }
 
 func GetConfig() *Config {
