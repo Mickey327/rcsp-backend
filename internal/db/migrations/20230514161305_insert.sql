@@ -1,19 +1,19 @@
 -- +goose Up
 -- +goose StatementBegin
 INSERT INTO users(email, password, role_name) VALUES ('jefferson@gmail.com','$2a$10$9EgGuxvFDbTfckfdc/yPsOFxfTXo3V5fmdVX73N6OBRyUbQ//2Yu6','admin');
-INSERT INTO categories VALUES ('Шутер');
-INSERT INTO categories VALUES ('MMORPG');
-INSERT INTO categories VALUES ('RPG');
-INSERT INTO categories VALUES ('Стратегия');
-INSERT INTO categories VALUES ('Симулятор');
-INSERT INTO categories VALUES ('Survival');
-INSERT INTO companies VALUES ('Valve');
-INSERT INTO companies VALUES ('Epic Games');
-INSERT INTO companies VALUES ('Bethesda Games');
-INSERT INTO companies VALUES ('Blizzard');
-INSERT INTO companies VALUES ('Sony');
-INSERT INTO companies VALUES ('Electronic Arts');
-INSERT INTO companies VALUES ('Ubisoft');
+INSERT INTO categories(name) VALUES ('Шутер');
+INSERT INTO categories(name) VALUES ('MMORPG');
+INSERT INTO categories(name) VALUES ('RPG');
+INSERT INTO categories(name) VALUES ('Стратегия');
+INSERT INTO categories(name) VALUES ('Симулятор');
+INSERT INTO categories(name) VALUES ('Survival');
+INSERT INTO companies(name) VALUES ('Valve');
+INSERT INTO companies(name) VALUES ('Epic Games');
+INSERT INTO companies(name) VALUES ('Bethesda Games');
+INSERT INTO companies(name) VALUES ('Blizzard');
+INSERT INTO companies(name) VALUES ('Sony');
+INSERT INTO companies(name) VALUES ('Electronic Arts');
+INSERT INTO companies(name) VALUES ('Ubisoft');
 INSERT INTO products (name, description, price, stock, image, category_id, company_id) VALUES ('Fallout 3','Увлекательная RPG в мире постапокалипсиса', 550, 125, 'fallout3.jpeg', 3, 3);
 INSERT INTO products (name, description, price, stock, image, category_id, company_id) VALUES ('Assassins Creed: Valhalla','Окунитесь в мир викингов в новой RPG от Ubisoft', 1499, 35, 'valhalla.jpeg', 3, 7);
 INSERT INTO products (name, description, price, stock, image, category_id, company_id)
@@ -46,5 +46,8 @@ VALUES ('1000 В-баксов Fortnite', 'Валюта для самого по�
 
 -- +goose Down
 -- +goose StatementBegin
-DELETE FROM users WHERE id = 1;
+TRUNCATE TABLE users;
+TRUNCATE TABLE categories;
+TRUNCATE TABLE companies;
+TRUNCATE TABLE products;
 -- +goose StatementEnd
