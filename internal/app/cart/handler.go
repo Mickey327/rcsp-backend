@@ -2,7 +2,6 @@ package cart
 
 import (
 	"errors"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -82,7 +81,7 @@ func (h *Handler) UpdateCart(c echo.Context) error {
 			Message: "error binding json data",
 		})
 	}
-	log.Println("DTO QUANTITY:", dto.Quantity)
+
 	dto.OrderID = orderID
 	dto.Product = &product.DTO{
 		ID: productID,

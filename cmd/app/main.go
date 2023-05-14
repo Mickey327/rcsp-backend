@@ -8,8 +8,10 @@ import (
 	"github.com/Mickey327/rcsp-backend/internal/app/auth"
 	"github.com/Mickey327/rcsp-backend/internal/app/cart"
 	"github.com/Mickey327/rcsp-backend/internal/app/category"
+	"github.com/Mickey327/rcsp-backend/internal/app/comment"
 	"github.com/Mickey327/rcsp-backend/internal/app/company"
 	appConfig "github.com/Mickey327/rcsp-backend/internal/app/config"
+	"github.com/Mickey327/rcsp-backend/internal/app/mail"
 	"github.com/Mickey327/rcsp-backend/internal/app/order"
 	"github.com/Mickey327/rcsp-backend/internal/app/orderItem"
 	"github.com/Mickey327/rcsp-backend/internal/app/product"
@@ -36,6 +38,8 @@ func main() {
 		log.Fatal(err)
 	}
 
+	m := mail.New(appConf.Email, "usp2002@mail.ru", "Заказ принят в обработку", "Мы обрабатываем ваш заказ")
+	m.SendMail()
 	jwtMiddleware := echojwt.WithConfig(echojwt.Config{
 		SigningKey: []byte(auth.GetJWTSecret().Secret),
 		NewClaimsFunc: func(c echo.Context) jwt.Claims {
@@ -78,6 +82,12 @@ func main() {
 	orderHandler := order.NewHandler(order.NewService(order.NewRepository(db)))
 	e.GET("/api/order", orderHandler.ReadCurrentUserArrangingOrder, jwtMiddleware)
 	e.POST("/api/order", orderHandler.Create, jwtMiddleware)
+	e.GET("/api/order/:id", orderHandler.ReadByIdEager, jwtMiddleware)
+	e.PUT("/api/order", orderHandler.Update, jwtMiddleware)
+
+	commentHandler := comment.NewHandler(comment.NewService(comment.NewRepository(db)))
+	e.POST("/api/comment", commentHandler.WriteComment, jwtMiddleware) //?productID
+	e.GET("/api/comment", commentHandler.ReadComments)                 //?productID
 
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins:     []string{appConf.ClientHost + ":" + appConf.ClientPort},

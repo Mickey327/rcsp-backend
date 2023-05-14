@@ -3,12 +3,12 @@ package order
 import "github.com/Mickey327/rcsp-backend/internal/app/orderItem"
 
 type DTO struct {
-	ID         uint64           `json:"id,omitempty"`
-	Total      uint64           `json:"total,omitempty"`
-	Status     string           `json:"status,omitempty"`
+	ID         uint64           `json:"id"`
+	Total      uint64           `json:"total"`
+	Status     string           `json:"status"`
 	IsArranged bool             `json:"is_arranged"`
-	UserID     uint64           `json:"user_id,omitempty"`
-	Count      uint64           `json:"count,omitempty"`
+	UserID     uint64           `json:"user_id"`
+	Count      uint64           `json:"count"`
 	OrderItems []*orderItem.DTO `json:"order_items"`
 }
 

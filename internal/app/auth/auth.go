@@ -60,7 +60,7 @@ func GenerateToken(user UserData, secret []byte) (string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	log.Printf("New token generated: %v", token)
+
 	tokenString, err := token.SignedString(secret)
 	if err != nil {
 		return "", err
@@ -91,20 +91,29 @@ func GetUserToken(c echo.Context) (*jwt.Token, error) {
 	return token, nil
 }
 
-func GetUserDataAndCheckRole(c echo.Context, role string) (*UserData, error) {
+func GetUserDataAndCheckRole(c echo.Context, roles ...string) (*UserData, error) {
 	token, err := GetUserToken(c)
+	log.Println(token)
 	if err != nil {
 		return nil, c.JSON(http.StatusUnauthorized, response.Response{
 			Code:    http.StatusUnauthorized,
 			Message: "can't get jwt token from cookie",
 		})
 	}
+	check := false
 
 	userData := GetUserDataFromToken(token)
-	if userData.Role != role {
+	for _, role := range roles {
+		if userData.Role == role {
+			check = true
+		}
+	}
+	log.Println(userData.ID, userData.Role, userData.Email)
+
+	if check == false {
 		return nil, c.JSON(http.StatusForbidden, response.Response{
 			Code:    http.StatusForbidden,
-			Message: "only " + userData.Role + " can do that action",
+			Message: "you don't have enough rights to do that action",
 		})
 	}
 

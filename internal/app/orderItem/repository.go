@@ -2,7 +2,6 @@ package orderItem
 
 import (
 	"context"
-	"log"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -58,6 +57,5 @@ func (r *OrderItemRepository) ReadByOrderAndProductID(ctx context.Context, order
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, OrderItemNotFound
 	}
-	log.Println(orderItem.OrderID, orderItem.Quantity, orderItem.UpdatedAt.String(), orderItem.CreatedAt.String())
 	return &orderItem, nil
 }

@@ -27,8 +27,8 @@ CREATE TABLE IF NOT EXISTS products(
     price BIGINT NOT NULL,
     stock BIGINT NOT NULL,
     image TEXT NOT NULL,
-    category_id BIGINT NOT NULL REFERENCES categories(id) ON UPDATE CASCADE,
-    company_id BIGINT NOT NULL REFERENCES companies(id) ON UPDATE CASCADE,
+    category_id BIGINT NOT NULL REFERENCES categories(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    company_id BIGINT NOT NULL REFERENCES companies(id) ON DELETE CASCADE ON UPDATE CASCADE,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );
@@ -37,25 +37,25 @@ CREATE TABLE IF NOT EXISTS orders(
     total BIGINT NOT NULL DEFAULT 0,
     status TEXT NOT NULL,
     is_arranged BOOLEAN NOT NULL DEFAULT FALSE,
-    user_id BIGINT NOT NULL REFERENCES users(id) ON UPDATE CASCADE,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );
 CREATE TABLE IF NOT EXISTS order_items(
     quantity BIGINT NOT NULL,
-    order_id BIGINT NOT NULL REFERENCES orders(id) ON UPDATE CASCADE,
-    product_id BIGINT NOT NULL REFERENCES products(id) ON UPDATE CASCADE,
+    order_id BIGINT NOT NULL REFERENCES orders(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    product_id BIGINT NOT NULL REFERENCES products(id) ON DELETE CASCADE ON UPDATE CASCADE,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW(),
     PRIMARY KEY(order_id, product_id)
 );
-CREATE TABLE IF NOT EXISTS reviews(
-    id BIGSERIAL NOT NULL PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS comments(
     message TEXT NOT NULL,
-    user_id BIGINT NOT NULL REFERENCES users(id) ON UPDATE CASCADE,
-    product_id BIGINT NOT NULL REFERENCES products(id) ON UPDATE CASCADE,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    product_id BIGINT NOT NULL REFERENCES products(id) ON DELETE CASCADE ON UPDATE CASCADE,
     created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
+    updated_at TIMESTAMP DEFAULT NOW(),
+    PRIMARY KEY(user_id, product_id)
 );
 
 CREATE OR REPLACE FUNCTION update_total_price() RETURNS TRIGGER AS $$
@@ -68,7 +68,8 @@ BEGIN
                                      INNER JOIN products p on oi.product_id = p.id
                                      INNER JOIN users u on orders.user_id = u.id
                             WHERE something.id = old.order_id
-                            GROUP BY user_id),0)
+                            GROUP BY user_id),0),
+            updated_at = NOW()
         WHERE old.order_id = orders.id;
         RETURN old;
     ELSIF (TG_OP = 'UPDATE') OR (TG_OP = 'INSERT') THEN
@@ -79,7 +80,8 @@ BEGIN
                                      INNER JOIN products p on oi.product_id = p.id
                                      INNER JOIN users u on orders.user_id = u.id
                             WHERE something.id = new.order_id
-                            GROUP BY user_id),0)
+                            GROUP BY user_id),0),
+        updated_at = NOW()
         WHERE new.order_id = orders.id;
         RETURN new;
     END IF;
@@ -97,7 +99,7 @@ CREATE TRIGGER update_order_total_price
 DROP TRIGGER IF EXISTS update_order_total_price ON order_items;
 DROP TABLE order_items;
 DROP TABLE orders;
-DROP TABLE reviews;
+DROP TABLE comments;
 DROP TABLE products;
 DROP TABLE users;
 DROP TABLE categories;

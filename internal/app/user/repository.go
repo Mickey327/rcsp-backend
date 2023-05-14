@@ -28,6 +28,7 @@ func NewRepository(db DB) *UserRepository {
 func (u *UserRepository) Register(ctx context.Context, user *User) (uint64, error) {
 	var id uint64
 	err := u.db.ExecQueryRow(ctx, `INSERT INTO users(email, password, role_name) VALUES ($1, $2, $3) RETURNING id`, user.Email, user.Password, user.Role).Scan(&id)
+	err = u.db.ExecQueryRow(ctx, `INSERT INTO orders(status, user_id) VALUES ('Создан', $1) RETURNING id`, id).Scan(&id)
 	return id, errors.Wrapf(err, "error registering user: %v", user)
 }
 
