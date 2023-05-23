@@ -3,6 +3,6 @@ package product
 import "errors"
 
 var (
-	ProductNotFoundErr      = errors.New("product not found")
-	ProductAlreadyExistsErr = errors.New("product with such name already exists")
+	ProductNotFoundErr      = errors.New("товар не найден")
+	ProductAlreadyExistsErr = errors.New("товар с таким именем уже существует")
 )

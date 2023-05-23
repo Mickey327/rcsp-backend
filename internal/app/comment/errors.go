@@ -3,5 +3,5 @@ package comment
 import "errors"
 
 var (
-	CommentNotFoundErr = errors.New("comment not found")
+	CommentNotFoundErr = errors.New("комментарий не найден")
 )

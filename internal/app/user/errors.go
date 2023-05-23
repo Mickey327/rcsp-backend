@@ -3,8 +3,8 @@ package user
 import "errors"
 
 var (
-	UserNotFoundErr      = errors.New("no user with such email")
-	UserAlreadyExistsErr = errors.New("user with such email already exists")
-	UserWrongPasswordErr = errors.New("wrong password")
-	UserTokenErr         = errors.New("error generating token for user")
+	UserNotFoundErr      = errors.New("пользователя с таким email не существует")
+	UserAlreadyExistsErr = errors.New("пользователь с таким email уже существует")
+	UserWrongPasswordErr = errors.New("неверный пароль")
+	UserTokenErr         = errors.New("ошибка генерации токена для пользователя")
 )

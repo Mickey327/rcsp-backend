@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	"github.com/Mickey327/rcsp-backend/internal/app/auth"
-	"github.com/Mickey327/rcsp-backend/internal/app/response"
 	"github.com/labstack/echo/v4"
 )
 
@@ -36,10 +35,7 @@ func (h *Handler) Create(c echo.Context) error {
 
 	o, err := h.service.Create(c, userData.ID)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, response.Response{
-			Code:    http.StatusInternalServerError,
-			Message: "error creating order for user",
-		})
+		return echo.NewHTTPError(http.StatusInternalServerError, "ошибка создания заказа для пользователя")
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{
@@ -57,46 +53,28 @@ func (h *Handler) Update(c echo.Context) error {
 
 	databaseOrderDTO, err := h.service.ReadCurrentUserArrangingOrderLazy(c, userData.ID)
 	if err != nil {
-		return c.JSON(http.StatusNotFound, response.Response{
-			Code:    http.StatusNotFound,
-			Message: err.Error(),
-		})
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
 	if databaseOrderDTO.Total == 0 {
-		return c.JSON(http.StatusBadRequest, response.Response{
-			Code:    http.StatusBadRequest,
-			Message: "user can't update zero total order",
-		})
+		return echo.NewHTTPError(http.StatusBadRequest, "пользователь не может обновить пустой заказ")
 	}
 
 	if databaseOrderDTO.UserID != userData.ID && userData.Role == "user" {
-		return c.JSON(http.StatusBadRequest, response.Response{
-			Code:    http.StatusBadRequest,
-			Message: "user can't update other user's order",
-		})
+		return echo.NewHTTPError(http.StatusForbidden, "пользователь не может обновить чужой заказ")
 	}
 
 	orderDTO := DTO{}
 
 	if err = c.Bind(&orderDTO); err != nil {
-		return c.JSON(http.StatusInternalServerError, response.Response{
-			Code:    http.StatusInternalServerError,
-			Message: "error binding json data",
-		})
+		return echo.NewHTTPError(http.StatusInternalServerError, "ошибка привязки данных из json")
 	}
 	if orderDTO.Status == "" {
-		return c.JSON(http.StatusBadRequest, response.Response{
-			Code:    http.StatusBadRequest,
-			Message: "wrong values format provided",
-		})
+		return echo.NewHTTPError(http.StatusBadRequest, "данные представлены в неверном формате")
 	}
 
 	if userData.Role == "admin" && orderDTO.ID == 0 {
-		return c.JSON(http.StatusBadRequest, response.Response{
-			Code:    http.StatusBadRequest,
-			Message: "wrong values format provided",
-		})
+		return echo.NewHTTPError(http.StatusBadRequest, "данные представлены в неверном формате")
 	}
 
 	databaseOrderDTO.Status = orderDTO.Status
@@ -104,10 +82,7 @@ func (h *Handler) Update(c echo.Context) error {
 
 	isUpdated, err := h.service.Update(c, databaseOrderDTO)
 	if !isUpdated || err != nil {
-		return c.JSON(http.StatusInternalServerError, response.Response{
-			Code:    http.StatusInternalServerError,
-			Message: "error during update order",
-		})
+		return echo.NewHTTPError(http.StatusInternalServerError, "ошибка обновления заказа")
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{
@@ -125,32 +100,20 @@ func (h *Handler) ReadByIdEager(c echo.Context) error {
 
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, response.Response{
-			Code:    http.StatusBadRequest,
-			Message: "error parsing id path parameter",
-		})
+		return echo.NewHTTPError(http.StatusBadRequest, "ошибка парсинга id заказа")
 	}
 	if id <= 0 {
-		return c.JSON(http.StatusBadRequest, response.Response{
-			Code:    http.StatusBadRequest,
-			Message: "id value must be positive",
-		})
+		return echo.NewHTTPError(http.StatusBadRequest, "id заказа должно быть положительным")
 	}
 
 	order, err := h.service.ReadByIdEager(c, id)
 
 	if err != nil {
-		return c.JSON(http.StatusNotFound, response.Response{
-			Code:    http.StatusNotFound,
-			Message: "order not found",
-		})
+		return echo.NewHTTPError(http.StatusNotFound, OrderNotFoundErr.Error())
 	}
 
 	if order.UserID != userData.ID && userData.Role == "user" {
-		return c.JSON(http.StatusBadRequest, response.Response{
-			Code:    http.StatusBadRequest,
-			Message: "user can't get other user's order",
-		})
+		return echo.NewHTTPError(http.StatusForbidden, "пользователь не может получить чужой заказ")
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{
@@ -176,10 +139,7 @@ func (h *Handler) ReadCurrentUserArrangingOrder(c echo.Context) error {
 	}
 
 	if err != nil {
-		return c.JSON(http.StatusNotFound, response.Response{
-			Code:    http.StatusNotFound,
-			Message: err.Error(),
-		})
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{
