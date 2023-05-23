@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	"github.com/Mickey327/rcsp-backend/internal/app/auth"
-	"github.com/Mickey327/rcsp-backend/internal/app/response"
 	"github.com/labstack/echo/v4"
 )
 
@@ -27,7 +26,6 @@ func NewHandler(service Service) *Handler {
 
 func (h *Handler) Create(c echo.Context) error {
 	_, err := auth.GetUserDataAndCheckRole(c, "admin")
-
 	if err != nil {
 		return err
 	}
@@ -35,54 +33,36 @@ func (h *Handler) Create(c echo.Context) error {
 	categoryDTO := DTO{}
 
 	if err = c.Bind(&categoryDTO); err != nil {
-		return c.JSON(http.StatusInternalServerError, response.Response{
-			Code:    http.StatusInternalServerError,
-			Message: "error binding json data",
-		})
+		return echo.NewHTTPError(http.StatusInternalServerError, "ошибка привязки данных из json")
 	}
 
 	if categoryDTO.Name == "" {
-		return c.JSON(http.StatusBadRequest, response.Response{
-			Code:    http.StatusBadRequest,
-			Message: "wrong values format provided",
-		})
+		return echo.NewHTTPError(http.StatusBadRequest, "данные представлены в неверном формате")
 	}
 
 	_, err = h.service.Create(c, &categoryDTO)
 	if err != nil {
-		return c.JSON(http.StatusConflict, response.Response{
-			Code:    http.StatusConflict,
-			Message: CategoryAlreadyExistsErr.Error(),
-		})
+		return echo.NewHTTPError(http.StatusConflict, CategoryAlreadyExistsErr.Error())
 	}
 
-	return c.JSON(http.StatusOK, response.Response{
-		Code:    http.StatusOK,
-		Message: "category was successfully created",
+	return c.JSON(http.StatusOK, echo.Map{
+		"code":    http.StatusOK,
+		"message": "категория была успешно создана",
 	})
 }
 
 func (h *Handler) Read(c echo.Context) error {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, response.Response{
-			Code:    http.StatusBadRequest,
-			Message: "error parsing id path parameter",
-		})
+		return echo.NewHTTPError(http.StatusBadRequest, "ошибка парсинга id категории")
 	}
 	if id <= 0 {
-		return c.JSON(http.StatusBadRequest, response.Response{
-			Code:    http.StatusBadRequest,
-			Message: "id value must be positive",
-		})
+		return echo.NewHTTPError(http.StatusBadRequest, "id категории должно быть положительным")
 	}
 
 	categoryDTO, err := h.service.Read(c, id)
 	if err != nil {
-		return c.JSON(http.StatusNotFound, response.Response{
-			Code:    http.StatusNotFound,
-			Message: err.Error(),
-		})
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{
@@ -94,10 +74,7 @@ func (h *Handler) Read(c echo.Context) error {
 func (h *Handler) ReadAll(c echo.Context) error {
 	categoryDTOs, err := h.service.ReadAll(c)
 	if err != nil {
-		return c.JSON(http.StatusNotFound, response.Response{
-			Code:    http.StatusNotFound,
-			Message: err.Error(),
-		})
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{
@@ -116,36 +93,24 @@ func (h *Handler) Update(c echo.Context) error {
 	categoryDTO := DTO{}
 
 	if err = c.Bind(&categoryDTO); err != nil {
-		return c.JSON(http.StatusInternalServerError, response.Response{
-			Code:    http.StatusInternalServerError,
-			Message: "error binding json data",
-		})
+		return echo.NewHTTPError(http.StatusInternalServerError, "ошибка привязки данных из json")
 	}
 	if categoryDTO.ID <= 0 || categoryDTO.Name == "" {
-		return c.JSON(http.StatusBadRequest, response.Response{
-			Code:    http.StatusBadRequest,
-			Message: "wrong values format provided",
-		})
+		return echo.NewHTTPError(http.StatusBadRequest, "данные представлены в неверном формате")
 	}
 
 	isUpdated, err := h.service.Update(c, &categoryDTO)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, response.Response{
-			Code:    http.StatusInternalServerError,
-			Message: err.Error(),
-		})
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	if !isUpdated {
-		return c.JSON(http.StatusNotFound, response.Response{
-			Code:    http.StatusNotFound,
-			Message: CategoryNotFoundErr.Error(),
-		})
+		return echo.NewHTTPError(http.StatusNotFound, CategoryNotFoundErr.Error())
 	}
 
-	return c.JSON(http.StatusOK, response.Response{
-		Code:    http.StatusOK,
-		Message: "category was successfully updated",
+	return c.JSON(http.StatusOK, echo.Map{
+		"code":    http.StatusOK,
+		"message": "категория была успешно обновлена",
 	})
 }
 
@@ -158,35 +123,23 @@ func (h *Handler) Delete(c echo.Context) error {
 
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, response.Response{
-			Code:    http.StatusBadRequest,
-			Message: "error parsing id path parameter",
-		})
+		return echo.NewHTTPError(http.StatusBadRequest, "ошибка парсинга id категории")
 	}
 	if id <= 0 {
-		return c.JSON(http.StatusBadRequest, response.Response{
-			Code:    http.StatusBadRequest,
-			Message: "id value must be positive",
-		})
+		return echo.NewHTTPError(http.StatusBadRequest, "id категории должно быть положительным")
 	}
 
 	isDeleted, err := h.service.Delete(c, id)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, response.Response{
-			Code:    http.StatusInternalServerError,
-			Message: err.Error(),
-		})
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	if !isDeleted {
-		return c.JSON(http.StatusNotFound, response.Response{
-			Code:    http.StatusNotFound,
-			Message: CategoryNotFoundErr.Error(),
-		})
+		return echo.NewHTTPError(http.StatusNotFound, CategoryNotFoundErr.Error())
 	}
 
-	return c.JSON(http.StatusOK, response.Response{
-		Code:    http.StatusOK,
-		Message: "category was successfully deleted",
+	return c.JSON(http.StatusOK, echo.Map{
+		"code":    http.StatusOK,
+		"message": "категория была успешно удалена",
 	})
 }

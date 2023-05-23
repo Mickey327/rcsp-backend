@@ -6,7 +6,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Mickey327/rcsp-backend/internal/app/response"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/labstack/echo/v4"
@@ -93,35 +92,27 @@ func GetUserToken(c echo.Context) (*jwt.Token, error) {
 
 func GetUserDataAndCheckRole(c echo.Context, roles ...string) (*UserData, error) {
 	token, err := GetUserToken(c)
-	log.Println(token)
+
 	if err != nil {
-		return nil, c.JSON(http.StatusUnauthorized, response.Response{
-			Code:    http.StatusUnauthorized,
-			Message: "can't get jwt token from cookie",
-		})
+		return nil, echo.NewHTTPError(http.StatusUnauthorized, "невозможно получить jwt token из cookie")
 	}
 	check := false
 
 	userData := GetUserDataFromToken(token)
+
+	if userData.ID <= 0 {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "неверное значение user id")
+	}
+
 	for _, role := range roles {
 		if userData.Role == role {
 			check = true
 		}
 	}
-	log.Println(userData.ID, userData.Role, userData.Email)
+	log.Println(userData.ID, userData.Role, userData.Email, check)
 
 	if check == false {
-		return nil, c.JSON(http.StatusForbidden, response.Response{
-			Code:    http.StatusForbidden,
-			Message: "you don't have enough rights to do that action",
-		})
-	}
-
-	if userData.ID <= 0 {
-		return nil, c.JSON(http.StatusBadRequest, response.Response{
-			Code:    http.StatusBadRequest,
-			Message: "wrong user id value",
-		})
+		return nil, echo.NewHTTPError(http.StatusForbidden, "у вас недостаточно прав для совершения этого действия")
 	}
 
 	return &userData, nil

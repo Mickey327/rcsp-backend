@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/Mickey327/rcsp-backend/internal/app/auth"
-	"github.com/Mickey327/rcsp-backend/internal/app/response"
 	"github.com/labstack/echo/v4"
 )
 
@@ -37,40 +36,28 @@ func (h *Handler) WriteComment(c echo.Context) error {
 	message := c.FormValue("message")
 
 	if message == "" {
-		return c.JSON(http.StatusBadRequest, response.Response{
-			Code:    http.StatusBadRequest,
-			Message: "comment message must be not empty",
-		})
+		return echo.NewHTTPError(http.StatusBadRequest, "комментарий не может быть пустой")
 	}
 
 	productIDString := c.QueryParam("productID")
 	if productIDString != "" {
 		productID, err = strconv.ParseUint(productIDString, 10, 64)
 		if err != nil {
-			return c.JSON(http.StatusBadRequest, response.Response{
-				Code:    http.StatusBadRequest,
-				Message: "error parsing productID query parameter",
-			})
+			return echo.NewHTTPError(http.StatusBadRequest, "ошибка парсинга id товара")
 		}
 		if productID <= 0 {
-			return c.JSON(http.StatusBadRequest, response.Response{
-				Code:    http.StatusBadRequest,
-				Message: "product id value must be positive",
-			})
+			return echo.NewHTTPError(http.StatusBadRequest, "id товара должно быть положительным")
 		}
 	}
 
 	_, err = h.service.WriteComment(c, userData.ID, productID, message)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, response.Response{
-			Code:    http.StatusInternalServerError,
-			Message: "error creating user message",
-		})
+		return echo.NewHTTPError(http.StatusInternalServerError, "ошибка создания комментария")
 	}
 
-	return c.JSON(http.StatusOK, response.Response{
-		Code:    http.StatusOK,
-		Message: "comment was successfully created",
+	return c.JSON(http.StatusOK, echo.Map{
+		"code":    http.StatusOK,
+		"message": "комментарий был успешно выложен",
 	})
 
 }
@@ -82,31 +69,19 @@ func (h *Handler) ReadComments(c echo.Context) error {
 	if productIDString != "" {
 		productID, err = strconv.ParseUint(productIDString, 10, 64)
 		if err != nil {
-			return c.JSON(http.StatusBadRequest, response.Response{
-				Code:    http.StatusBadRequest,
-				Message: "error parsing productID query parameter",
-			})
+			return echo.NewHTTPError(http.StatusBadRequest, "ошибка парсинга id товара")
 		}
 		if productID <= 0 {
-			return c.JSON(http.StatusBadRequest, response.Response{
-				Code:    http.StatusBadRequest,
-				Message: "product id value must be positive",
-			})
+			return echo.NewHTTPError(http.StatusBadRequest, "id товара должно быть положительным")
 		}
 	}
 
 	comments, err := h.service.ReadByProductID(c, productID)
 	if err != nil {
 		if errors.Is(err, CommentNotFoundErr) {
-			return c.JSON(http.StatusNotFound, response.Response{
-				Code:    http.StatusNotFound,
-				Message: "comments for this product not found",
-			})
+			return echo.NewHTTPError(http.StatusNotFound, "комментарии к данному товару не найдены")
 		} else {
-			return c.JSON(http.StatusInternalServerError, response.Response{
-				Code:    http.StatusInternalServerError,
-				Message: "error getting product comments",
-			})
+			return echo.NewHTTPError(http.StatusInternalServerError, "ошибка получения комментарий к товару")
 		}
 	}
 

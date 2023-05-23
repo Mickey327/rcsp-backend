@@ -15,6 +15,7 @@ import (
 	"github.com/Mickey327/rcsp-backend/internal/app/orderItem"
 	"github.com/Mickey327/rcsp-backend/internal/app/product"
 	"github.com/Mickey327/rcsp-backend/internal/app/user"
+	"github.com/Mickey327/rcsp-backend/internal/app/validator"
 	dbConfig "github.com/Mickey327/rcsp-backend/internal/db/config"
 	"github.com/Mickey327/rcsp-backend/internal/db/repository/postgres"
 	"github.com/golang-jwt/jwt/v4"
@@ -66,7 +67,9 @@ func main() {
 	e.POST("/api/product", productHandler.Create, jwtMiddleware)
 	e.PUT("/api/product", productHandler.Update, jwtMiddleware)
 
+	valid := validator.NewValidator()
 	userHandler := user.NewHandler(user.NewService(user.NewRepository(db)))
+	e.Validator = valid
 	e.POST("/api/register", userHandler.Register)
 	e.POST("/api/login", userHandler.Login)
 	e.GET("/api/logout", userHandler.Logout)
@@ -87,7 +90,7 @@ func main() {
 	e.GET("/api/comment", commentHandler.ReadComments)                 //?productID
 
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins:     []string{appConf.ClientHost + ":" + appConf.ClientPort},
+		AllowOrigins:     []string{appConf.ClientHost + ":" + appConf.ClientPort, "http://localhost:3000"},
 		AllowMethods:     []string{http.MethodGet, http.MethodPut, http.MethodPost, http.MethodDelete, http.MethodPatch},
 		AllowCredentials: true,
 	}))

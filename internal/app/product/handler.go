@@ -9,7 +9,6 @@ import (
 	"github.com/Mickey327/rcsp-backend/internal/app/auth"
 	"github.com/Mickey327/rcsp-backend/internal/app/category"
 	"github.com/Mickey327/rcsp-backend/internal/app/company"
-	"github.com/Mickey327/rcsp-backend/internal/app/response"
 	"github.com/labstack/echo/v4"
 )
 
@@ -47,42 +46,27 @@ func (h *Handler) Create(c echo.Context) error {
 
 	price, err := strconv.ParseUint(c.FormValue("price"), 10, 64)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, response.Response{
-			Code:    http.StatusBadRequest,
-			Message: "error parsing price value from form",
-		})
+		return echo.NewHTTPError(http.StatusBadRequest, "ошибка парсинга цены из формы")
 	}
 
 	companyID, err := strconv.ParseUint(c.FormValue("companyID"), 10, 64)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, response.Response{
-			Code:    http.StatusBadRequest,
-			Message: "error parsing company value from form",
-		})
+		return echo.NewHTTPError(http.StatusBadRequest, "ошибка парсинга компании из формы")
 	}
 
 	categoryID, err := strconv.ParseUint(c.FormValue("categoryID"), 10, 64)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, response.Response{
-			Code:    http.StatusBadRequest,
-			Message: "error parsing category value from form",
-		})
+		return echo.NewHTTPError(http.StatusBadRequest, "ошибка парсинга категории из формы")
 	}
 
 	stock, err := strconv.ParseUint(c.FormValue("stock"), 10, 64)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, response.Response{
-			Code:    http.StatusBadRequest,
-			Message: "error parsing stock value from form",
-		})
+		return echo.NewHTTPError(http.StatusBadRequest, "ошибка парсинга количества из формы")
 	}
 
 	file, err := c.FormFile("file")
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, response.Response{
-			Code:    http.StatusBadRequest,
-			Message: "error getting image from form",
-		})
+		return echo.NewHTTPError(http.StatusBadRequest, "ошибка парсинга изображения из формы")
 	}
 
 	comp := &company.DTO{
@@ -103,46 +87,31 @@ func (h *Handler) Create(c echo.Context) error {
 	}
 
 	if productDTO.Name == "" || productDTO.Price <= 0 || productDTO.Company.ID <= 0 || productDTO.Category.ID <= 0 || productDTO.Stock < 0 {
-		return c.JSON(http.StatusBadRequest, response.Response{
-			Code:    http.StatusBadRequest,
-			Message: "wrong values format provided",
-		})
+		return echo.NewHTTPError(http.StatusBadRequest, "данные представлены в неверном формате")
 	}
 
 	_, err = h.service.Create(c, &productDTO, file)
 	if err != nil {
 		if errors.Is(err, ProductAlreadyExistsErr) {
-			return c.JSON(http.StatusConflict, response.Response{
-				Code:    http.StatusConflict,
-				Message: ProductAlreadyExistsErr.Error(),
-			})
+			return echo.NewHTTPError(http.StatusConflict, ProductAlreadyExistsErr.Error())
 		} else {
-			return c.JSON(http.StatusInternalServerError, response.Response{
-				Code:    http.StatusInternalServerError,
-				Message: "error uploading product",
-			})
+			return echo.NewHTTPError(http.StatusInternalServerError, "ошибка создания товара")
 		}
 	}
 
-	return c.JSON(http.StatusOK, response.Response{
-		Code:    http.StatusOK,
-		Message: "product was successfully created",
+	return c.JSON(http.StatusOK, echo.Map{
+		"code":    http.StatusOK,
+		"message": "товар был успешно создан",
 	})
 }
 
 func (h *Handler) Read(c echo.Context) error {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, response.Response{
-			Code:    http.StatusBadRequest,
-			Message: "error parsing id path parameter",
-		})
+		return echo.NewHTTPError(http.StatusBadRequest, "ошибка парсинга id товара")
 	}
 	if id <= 0 {
-		return c.JSON(http.StatusBadRequest, response.Response{
-			Code:    http.StatusBadRequest,
-			Message: "id value must be positive",
-		})
+		return echo.NewHTTPError(http.StatusBadRequest, "id товара должно быть положительным")
 	}
 
 	var productDTO *DTO
@@ -156,10 +125,7 @@ func (h *Handler) Read(c echo.Context) error {
 	}
 
 	if err != nil {
-		return c.JSON(http.StatusNotFound, response.Response{
-			Code:    http.StatusNotFound,
-			Message: err.Error(),
-		})
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{
@@ -178,33 +144,21 @@ func (h *Handler) ReadAll(c echo.Context) error {
 	if companyIDString != "" {
 		companyID, err = strconv.ParseUint(companyIDString, 10, 64)
 		if err != nil {
-			return c.JSON(http.StatusBadRequest, response.Response{
-				Code:    http.StatusBadRequest,
-				Message: "error parsing companyID query parameter",
-			})
+			return echo.NewHTTPError(http.StatusBadRequest, "ошибка парсинга id компании")
 		}
 
 		if companyID <= 0 {
-			return c.JSON(http.StatusBadRequest, response.Response{
-				Code:    http.StatusBadRequest,
-				Message: "company id value must be positive",
-			})
+			return echo.NewHTTPError(http.StatusBadRequest, "id компании должно быть положительным")
 		}
 	}
 
 	if categoryIDString != "" {
 		categoryID, err = strconv.ParseUint(categoryIDString, 10, 64)
 		if err != nil {
-			return c.JSON(http.StatusBadRequest, response.Response{
-				Code:    http.StatusBadRequest,
-				Message: "error parsing categoryID query parameter",
-			})
+			return echo.NewHTTPError(http.StatusBadRequest, "ошибка парсинга id категории")
 		}
 		if categoryID <= 0 {
-			return c.JSON(http.StatusBadRequest, response.Response{
-				Code:    http.StatusBadRequest,
-				Message: "category id value must be positive",
-			})
+			return echo.NewHTTPError(http.StatusBadRequest, "id категории должно быть положительным")
 		}
 	}
 
@@ -219,10 +173,7 @@ func (h *Handler) ReadAll(c echo.Context) error {
 	}
 
 	if err != nil {
-		return c.JSON(http.StatusNotFound, response.Response{
-			Code:    http.StatusNotFound,
-			Message: err.Error(),
-		})
+		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{
@@ -241,37 +192,25 @@ func (h *Handler) Update(c echo.Context) error {
 	productDTO := DTO{}
 
 	if err = c.Bind(&productDTO); err != nil {
-		return c.JSON(http.StatusInternalServerError, response.Response{
-			Code:    http.StatusInternalServerError,
-			Message: "error binding json data",
-		})
+		return echo.NewHTTPError(http.StatusInternalServerError, "ошибка привязки данных из json")
 	}
 
 	if productDTO.Company == nil || productDTO.Category == nil || productDTO.ID <= 0 || productDTO.Name == "" || productDTO.Price <= 0 || productDTO.Image == "" || productDTO.Company.ID <= 0 || productDTO.Category.ID <= 0 || productDTO.Stock < 0 {
-		return c.JSON(http.StatusBadRequest, response.Response{
-			Code:    http.StatusBadRequest,
-			Message: "wrong values format provided",
-		})
+		return echo.NewHTTPError(http.StatusBadRequest, "данные представлены в неверном формате")
 	}
 
 	isUpdated, err := h.service.Update(c, &productDTO)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, response.Response{
-			Code:    http.StatusInternalServerError,
-			Message: err.Error(),
-		})
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	if !isUpdated {
-		return c.JSON(http.StatusNotFound, response.Response{
-			Code:    http.StatusNotFound,
-			Message: ProductNotFoundErr.Error(),
-		})
+		return echo.NewHTTPError(http.StatusNotFound, ProductNotFoundErr.Error())
 	}
 
-	return c.JSON(http.StatusOK, response.Response{
-		Code:    http.StatusOK,
-		Message: "product was successfully updated",
+	return c.JSON(http.StatusOK, echo.Map{
+		"code":    http.StatusOK,
+		"message": "товар был успешно обновлен",
 	})
 }
 
@@ -284,35 +223,23 @@ func (h *Handler) Delete(c echo.Context) error {
 
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, response.Response{
-			Code:    http.StatusBadRequest,
-			Message: "error parsing id path parameter",
-		})
+		return echo.NewHTTPError(http.StatusBadRequest, "ошибка парсинга id товара")
 	}
 	if id <= 0 {
-		return c.JSON(http.StatusBadRequest, response.Response{
-			Code:    http.StatusBadRequest,
-			Message: "id value must be positive",
-		})
+		return echo.NewHTTPError(http.StatusBadRequest, "id товара должно быть положительным")
 	}
 
 	isDeleted, err := h.service.Delete(c, id)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, response.Response{
-			Code:    http.StatusInternalServerError,
-			Message: err.Error(),
-		})
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	if !isDeleted {
-		return c.JSON(http.StatusNotFound, response.Response{
-			Code:    http.StatusNotFound,
-			Message: ProductNotFoundErr.Error(),
-		})
+		return echo.NewHTTPError(http.StatusNotFound, ProductNotFoundErr.Error())
 	}
 
-	return c.JSON(http.StatusOK, response.Response{
-		Code:    http.StatusOK,
-		Message: "product was successfully deleted",
+	return c.JSON(http.StatusOK, echo.Map{
+		"code":    http.StatusOK,
+		"message": "товар был успешно удален",
 	})
 }

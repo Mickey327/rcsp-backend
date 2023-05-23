@@ -9,7 +9,6 @@ import (
 	"github.com/Mickey327/rcsp-backend/internal/app/order"
 	"github.com/Mickey327/rcsp-backend/internal/app/orderItem"
 	"github.com/Mickey327/rcsp-backend/internal/app/product"
-	"github.com/Mickey327/rcsp-backend/internal/app/response"
 	"github.com/labstack/echo/v4"
 )
 
@@ -42,16 +41,10 @@ func (h *Handler) UpdateCart(c echo.Context) error {
 	if productIDString != "" {
 		productID, err = strconv.ParseUint(productIDString, 10, 64)
 		if err != nil {
-			return c.JSON(http.StatusBadRequest, response.Response{
-				Code:    http.StatusBadRequest,
-				Message: "error parsing productID query parameter",
-			})
+			return echo.NewHTTPError(http.StatusBadRequest, "ошибка парсинга id товара")
 		}
 		if productID <= 0 {
-			return c.JSON(http.StatusBadRequest, response.Response{
-				Code:    http.StatusBadRequest,
-				Message: "product id value must be positive",
-			})
+			return echo.NewHTTPError(http.StatusBadRequest, "id товара должно быть положительным")
 		}
 	}
 
@@ -59,27 +52,18 @@ func (h *Handler) UpdateCart(c echo.Context) error {
 	if orderIDString != "" {
 		orderID, err = strconv.ParseUint(orderIDString, 10, 64)
 		if err != nil {
-			return c.JSON(http.StatusBadRequest, response.Response{
-				Code:    http.StatusBadRequest,
-				Message: "error parsing orderID query parameter",
-			})
+			return echo.NewHTTPError(http.StatusBadRequest, "ошибка парсинга id заказа")
 		}
 
 		if orderID <= 0 {
-			return c.JSON(http.StatusBadRequest, response.Response{
-				Code:    http.StatusBadRequest,
-				Message: "order id value must be positive",
-			})
+			return echo.NewHTTPError(http.StatusBadRequest, "id заказа должно быть положительным")
 		}
 	}
 
 	dto := &orderItem.DTO{}
 
 	if err = c.Bind(&dto); err != nil {
-		return c.JSON(http.StatusInternalServerError, response.Response{
-			Code:    http.StatusInternalServerError,
-			Message: "error binding json data",
-		})
+		return echo.NewHTTPError(http.StatusInternalServerError, "ошибка привязки данных из json")
 	}
 
 	dto.OrderID = orderID
@@ -91,20 +75,11 @@ func (h *Handler) UpdateCart(c echo.Context) error {
 
 	if err != nil {
 		if errors.Is(err, WrongCartErr) || errors.Is(err, NotPositiveQuantityErr) {
-			return c.JSON(http.StatusBadRequest, response.Response{
-				Code:    http.StatusBadRequest,
-				Message: err.Error(),
-			})
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		} else if errors.Is(err, order.OrderNotFoundErr) {
-			return c.JSON(http.StatusNotFound, response.Response{
-				Code:    http.StatusNotFound,
-				Message: err.Error(),
-			})
+			return echo.NewHTTPError(http.StatusNotFound, err.Error())
 		} else {
-			return c.JSON(http.StatusInternalServerError, response.Response{
-				Code:    http.StatusInternalServerError,
-				Message: err.Error(),
-			})
+			return echo.NewHTTPError(http.StatusInternalServerError, "ошибка произошла во время обновления корзины")
 		}
 	}
 
@@ -128,16 +103,10 @@ func (h *Handler) RemoveFromCart(c echo.Context) error {
 	if productIDString != "" {
 		productID, err = strconv.ParseUint(productIDString, 10, 64)
 		if err != nil {
-			return c.JSON(http.StatusBadRequest, response.Response{
-				Code:    http.StatusBadRequest,
-				Message: "error parsing productID query parameter",
-			})
+			return echo.NewHTTPError(http.StatusBadRequest, "ошибка парсинга id товара")
 		}
 		if productID <= 0 {
-			return c.JSON(http.StatusBadRequest, response.Response{
-				Code:    http.StatusBadRequest,
-				Message: "product id value must be positive",
-			})
+			return echo.NewHTTPError(http.StatusBadRequest, "id товара должно быть положительным")
 		}
 	}
 
@@ -145,17 +114,11 @@ func (h *Handler) RemoveFromCart(c echo.Context) error {
 	if orderIDString != "" {
 		orderID, err = strconv.ParseUint(orderIDString, 10, 64)
 		if err != nil {
-			return c.JSON(http.StatusBadRequest, response.Response{
-				Code:    http.StatusBadRequest,
-				Message: "error parsing orderID query parameter",
-			})
+			return echo.NewHTTPError(http.StatusBadRequest, "ошибка парсинга id заказа")
 		}
 
 		if orderID <= 0 {
-			return c.JSON(http.StatusBadRequest, response.Response{
-				Code:    http.StatusBadRequest,
-				Message: "order id value must be positive",
-			})
+			return echo.NewHTTPError(http.StatusBadRequest, "id заказа должно быть положительным")
 		}
 	}
 
@@ -169,21 +132,12 @@ func (h *Handler) RemoveFromCart(c echo.Context) error {
 	o, err := h.service.RemoveFromCart(c, dto)
 	if err != nil {
 		if errors.Is(err, orderItem.OrderItemNotFound) || errors.Is(err, order.OrderNotFoundErr) {
-			return c.JSON(http.StatusNotFound, response.Response{
-				Code:    http.StatusNotFound,
-				Message: err.Error(),
-			})
+			return echo.NewHTTPError(http.StatusNotFound, err.Error())
 		}
 		if errors.Is(err, WrongCartErr) {
-			return c.JSON(http.StatusBadRequest, response.Response{
-				Code:    http.StatusBadRequest,
-				Message: err.Error(),
-			})
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		} else {
-			return c.JSON(http.StatusInternalServerError, response.Response{
-				Code:    http.StatusInternalServerError,
-				Message: err.Error(),
-			})
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 	}
 

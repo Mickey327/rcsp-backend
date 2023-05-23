@@ -3,6 +3,6 @@ package category
 import "errors"
 
 var (
-	CategoryNotFoundErr      = errors.New("category not found")
-	CategoryAlreadyExistsErr = errors.New("category with such name already exists")
+	CategoryNotFoundErr      = errors.New("категория не найдена")
+	CategoryAlreadyExistsErr = errors.New("категория с таким именем уже существует")
 )

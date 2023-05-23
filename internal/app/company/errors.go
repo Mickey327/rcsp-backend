@@ -3,6 +3,6 @@ package company
 import "errors"
 
 var (
-	CompanyNotFoundErr      = errors.New("company not found")
-	CompanyAlreadyExistsErr = errors.New("company with such name already exists")
+	CompanyNotFoundErr      = errors.New("компания не найдена")
+	CompanyAlreadyExistsErr = errors.New("компания с таким именем уже сушествует")
 )
